@@ -55,8 +55,6 @@ mean((ump$Y - full.model$fitted.values)^2)
 
 
 
-
-
 # Home Team Runs VS Total Run Impact
 plot(ump$X1, ump$Y, main = 'Home Team Runs Vs Total Run Impact', xlab = 'Home Team Runs', ylab = 'Total Run Impact')
 # Away Team Runs VS Total Run Impact
