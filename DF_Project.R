@@ -3,6 +3,7 @@ library(ALSM)
 library(dplyr)
 library(leaps)
 library(caret)
+#MATH 6357 
 
 df <- data.frame(read.csv('mlb-umpire-scorecard.csv'))
 df[,6:19] <- sapply(df[,6:19], as.numeric) # convert chr to numeric
