@@ -29,18 +29,3 @@ for(j in 1:k){
     cv.errors[j,i]=mean((Hitters$Salary[folds==j]-pred)^2)
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-# Correlation Between Variables -----
-numeric_subset <- df %>% select_if(function(x) is.numeric(x))
-numeric_susbet = numeric_subset[,-1]
-cor(numeric_subset)
