@@ -2,30 +2,27 @@ library(tidyverse)
 library(ALSM)
 library(dplyr)
 library(leaps)
-library(caret)
-#MATH 6357 
+library(MASS)
 
-df <- data.frame(read.csv('mlb-umpire-scorecard.csv'))
-df[,6:19] <- sapply(df[,6:19], as.numeric) # convert chr to numeric
+df <- data.frame(read.csv('umpire_experience.csv'))
+df[,7:21] <- sapply(df[,7:21], as.numeric) # convert chr to numeric
+df$experience <- as.factor(df$experience) # create factor with experience
 str(df)
 
-df.drop <- drop_na(df) # drop missing values
-df.numeric <- df.drop[6:19]
-full.lm <- lm(log(total_run_impact)~.,data = df.numeric) # build model on log of y
+df.predictors <- df[,7:22]
 
-# run best subsets to determine predictors
-lm.best <- regsubsets(total_run_impact~., data = df.numeric, method = 'exhaustive')
-plot(lm.best$rss)
+full.lm <- lm((total_run_impact+1) ~., data = df.predictors)
+?boxcox
+lambda <- boxcox(object = full.lm, lambda = seq(-2, 2, 1/10), plotit = FALSE)
+which.max(lambda$y)
+lambda$x[20]
 
-# K-folds CV to estimate out of sample error
-for(j in 1:k){
-  # Fit the model with each subset of predictors on the training part of the fold
-  best.fit=regsubsets(Salary~.,data=Hitters[folds!=j,], nvmax=19) 
-  # For each subset
-  for(i in 1:19){
-    # Predict on the hold out part of the fold for that subset
-    pred=predict(best.fit, Hitters[folds==j,],id=i)
-    # Get the mean squared error for the model trained on the fold with the subset
-    cv.errors[j,i]=mean((Hitters$Salary[folds==j]-pred)^2)
-  }
-}
+lm.bc <- lm((total_run_impact+1)^-.1~., data = df.predictors) # create model with transform recommended by BC
+plot(df.predictors$total_run_impact, lm.bc$residuals) # residuals closer to normal
+
+best_model <- regsubsets((total_run_impact+1)^-.1~., data = df.predictors) # find best predictors with reg subsets
+best.summary <- summary(best_model)
+which.max(best.summary$adjr2) # 8 predictors recommended
+best.summary$which[8,]
+
+df_best <- df.predictors[best.summary$which[8,]] # create df of best performing predictors
