@@ -1,0 +1,123 @@
+## Chapter 7 
+
+hk = read.csv(choose.files(), header=T) # File Name HKExchange
+attach(hk)
+head(hk)
+
+plot(DATE, EXHKUS)
+# This doesn't plot (or doesn't plot correctly) (MINE DOES) because it cannot handle the format 
+#   of the variable DATE correctly. Let's make our own Time Variable.
+
+dim(hk)
+Time = 1:502
+
+plot(Time, EXHKUS)
+
+# Let's build a model with time, t, as the independent variable. 
+m1 = lm(EXHKUS ~ Time)
+summary(m1)
+
+# Time is significant since its p-value = 0 < any alpha, which we are happy with. But the 
+#   R2 and R2a values are .139 and .1375, which are very small and bad. The graph has an 
+#   overall quadratic trend, so let's add a square term.
+
+Time2 = Time^2
+m2 = lm(EXHKUS ~ Time + Time2)
+summary(m2)
+# The square term of Time2 is alos significant with p-value = 0. The R2 and R2a values have
+#   jumped up to .8623 and .8617, which is really good. 
+
+# Let's write out the regression model:
+
+# EXHKUS = 7.797 - .0003689(Time) + .0000008269(Time2)
+
+tail(hk)
+
+# Notice the weekend gaps of March 24 & 25. So, the next period in time where data would be
+#   collected would be Monday April 2 after the weekend of March 31 and April 1. Let's predict
+#   what the exchange rate would be on that day. We must plug in values that are on the small
+#   scale as the original Time variable and not be the number of periods forward we want to
+#   move. So, the next piece of data collected would be 503
+
+EXHKUS = 7.797 - .0003689*(503) + .0000008269*(503*503)
+
+prescrip = read.csv(choose.files(), header=T) # File Name 'PerscriptionDrug'
+attach(prescrip)
+head(prescrip)
+
+plot(TIME, COST_CLM)
+# The mean is not constant here, it is increasing through time as the plot goes up.
+#   This means that COST_CLM is NOT stationary in the mean. 
+#   The variance is also not constant here. (The first window has very small variation and
+#   other windows are much larger.) This means that COST_CLM is NOT stationary in the variance
+#   either. 
+
+############################## NOVEMBER 30 #################################
+prescrip = read.csv(choose.files(), header=T) # File Name 'PerscriptionDrug'
+attach(prescrip)
+head(prescrip)
+
+plot(TIME, COST_CLM)
+
+# Let's try to remove the linear trend to see if we can make the graph more stationary.
+#   Taking a first order difference can often remove a linear trend. 
+
+dim(prescrip)
+COST_CLM1 = COST_CLM[-1]
+# This takes off the first piece of data, thus shifting COST back 1 period. 
+
+COST_CLM
+COST_CLM1
+
+diff = COST_CLM1 - COST_CLM[1:67]
+# This will be the differences we are experiencing as we progress from one point to another in time.
+diff
+plot(TIME, diff)  # Time in the original data has 68 observations and diff has ONLY 67
+
+plot(TIME[1:67],diff)
+# We did remove the linear trend. This is stationary in the mean as the expected value is the same
+#   throughout the plot. So, the mean is constant. But, the variance seems to be increasing a bit
+#   from left to right, so, not very stationary in the variance. 
+
+# Does this data look like it could follow a Random Walk Model?
+#   (1) The original data plot does apppear to follow an overall linear trend in time. CHECK
+#   (2) The original data does have variability that increases a bit through time. CHECK
+#   (3) The differenced data is stationary in the mean but  not so perfect in the variance. HALF CHECK
+
+sd(COST_CLM)
+sd(diff)
+#   (4) The sd(original) >> sd(difference) CHECK
+#   Therefore, we get 3.5 checks out of 4. I do then feel this could probably be modeled as a random walk. 
+
+################### December 7 #############################
+prescrip = read.csv(choose.files(), header=T) # File Name 'PerscriptionDrug'
+attach(prescrip)
+
+COST_CLM1 = COST_CLM[-1]
+diff = COST_CLM1 - COST_CLM[1:67]
+
+sd(COST_CLM)
+sd(diff)
+
+# Let's predict what the COST_CLM would be 1 year into the future.
+
+# 1 = # periods forward = 12 months
+cbar = mean(diff)
+Sc = sd(diff)
+tail(prescrip)
+
+Yt = 30.66242
+COST_CLM[68] # This is 30.66242
+
+# The predicted piece l periods into the future is: Yt + l*(cbar)
+COST_CLM[68]+12*cbar
+
+# For a 95% prediction interval:
+# Yt+1*(cbar) +/- 2*Sc*sqrt(l)
+
+COST_CLM[68]+12*cbar - 2*Sc*sqrt(12)
+COST_CLM[68]+12*cbar + 2*Sc*sqrt(12)
+
+# Thus, 1 year into the future, we expect the average prescription COST_CLM to be $33.55 and the we 
+#   are 95% confident it will be somewhere between $30.02 and $37.075.
+

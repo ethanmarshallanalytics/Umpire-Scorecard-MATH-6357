@@ -3,36 +3,34 @@ library(ALSM)
 library(dplyr)
 library(leaps)
 library(MASS)
+library(ggplot2)
+library(lubridate)
 
-df <- data.frame(read.csv('umpire_experience.csv'))
-df[,7:21] <- sapply(df[,7:21], as.numeric) # convert chr to numeric
-df$experience <- as.factor(df$experience) # create factor with experience
+df = data.frame(read.csv('umpire_experience.csv'))
+df[,7:21] = sapply(df[,7:21], as.numeric) # convert chr to numeric
+df$experience = as.factor(df$experience) # create factor with experience
 str(df)
 
-df.predictors <- df[,7:22]
+df.predictors = df[,7:22]
 
-full.lm <- lm((total_run_impact+1) ~., data = df.predictors)
+full.lm = lm((total_run_impact+1) ~., data = df.predictors)
 ?boxcox
-lambda <- boxcox(object = full.lm, lambda = seq(-2, 2, 1/10), plotit = FALSE)
+lambda = boxcox(object = full.lm, lambda = seq(-2, 2, 1/10), plotit = FALSE)
 which.max(lambda$y)
 lambda$x[20]
 
-lm.bc <- lm((total_run_impact+1)^-.1~., data = df.predictors) # create model with transform recommended by BC
+lm.bc = lm((total_run_impact+1)^-.1~., data = df.predictors) # create model with transform recommended by BC
 plot(df.predictors$total_run_impact, lm.bc$residuals) # residuals closer to normal
 
-best_model <- regsubsets((total_run_impact+1)^-.1~., data = df.predictors) # find best predictors with reg subsets
-best.summary <- summary(best_model)
+best_model = regsubsets((total_run_impact+1)^-.1~., data = df.predictors) # find best predictors with reg subsets
+best.summary = summary(best_model)
 which.max(best.summary$adjr2) # 8 predictors recommended
 best.summary$which[8,]
 
-df_best <- df.predictors[best.summary$which[8,]] # create df of best performing predictors
-
-# ----------- Splitting Training and Testing ---------------
-
-
+df_best = df.predictors[best.summary$which[8,]] # create df of best performing predictors
 
 # ------------ Creating lm with df_best as dataset -----------
-df_best_model <- lm((total_run_impact + 1)^(-0.1) ~ ., data = df_best)
+df_best_model = lm((total_run_impact + 1)^(-0.1) ~ ., data = df_best)
 summary(df_best_model)
 # R^2 of 0.6915 / R^2a = 0.6914
 
@@ -45,3 +43,23 @@ print(coeff_int)
 alpha_a = 0.05/9
 bonf_conf_int = confint(df_best_model, level = 1 - alpha_a)
 print(bonf_conf_int)
+
+# ------------ Predicting 2022 Season ---------------
+df$date = as.Date(df$date, format = "%m/%d/%Y")
+df$year = as.integer(format(as.Date(df$date, format = "%m/%d/%Y"), "%Y"))
+
+df.2022 = df[df$year == 2022,]
+vars = colnames(df_best)
+df.2022_best = df.2022[, vars, drop = FALSE]
+
+predict_2022 = predict(df_best_model, newdata = df.2022_best)
+
+actual_values = df.2022_best$total_run_impact
+comparison_df = data.frame(Actual = actual_values, Predicted = predict_2022)
+
+ggplot(comparison_df, aes(x = Actual, y = Predicted)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +  # Add a diagonal line for reference
+  labs(title = "Actual vs Predicted",
+       x = "Actual Values",
+       y = "Predicted Values")

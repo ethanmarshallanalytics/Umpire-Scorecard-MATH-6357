@@ -1,0 +1,198 @@
+### CHAPTER 6
+risk = read.csv(choose.files(), header=T) # File name is 'RiskSurvey'
+attach(risk)
+head(risk)
+
+m1 = lm(FIRMCOST ~ ASSUME + CAP + SIZELOG + INDCOST + CENTRAL + SOPH)
+summary(m1)
+
+# SIZELOG and INDCOST had no hypotheses and were the only 2 that turned out significant, .000704 and .007092 
+#   respectively. CAP and CENTRAL they thought were going to to have - slopes and are +. 
+#   F p-value = .0027 < any alpha, which is good, the model as a whole is significant. However, R2 and R2a are
+#   only .256 and .188, which are low and bad. 
+
+par(mfrow=c(2,6))
+plot.new() # makes a blank plot
+hist(ASSUME)
+hist(SIZELOG)
+hist(INDCOST)
+hist(CENTRAL)
+hist(SOPH)
+hist(FIRMCOST)
+plot(ASSUME, FIRMCOST)
+plot(SIZELOG, FIRMCOST)
+plot(INDCOST, FIRMCOST)
+plot(CENTRAL, FIRMCOST)
+plot(SOPH, FIRMCOST)
+
+# I made no plots of CAP since it is a 0/1 indicator valriable. We wouldn't transform or square on of those.
+#   Before we make decisions about transformations and square terms, let's find and remove the outliers and
+#   high leverage points.
+
+rsta = rstandard(m1)
+rsta[order(rsta)]
+
+rstu = rstudent(m1)
+rstu[order(rstu)]
+
+# Outliers are 72 and 15
+
+lev=hatvalues(m1)
+lev[order(lev)]
+dim(risk)
+# high leverage cutoff = 3(k+1)/n = 3(6+1)/73
+cutoff =21/73
+print(cutoff)
+
+## Therefore, our high leverage points are 73, 16, 57. Now we create a subset that removes the outliers & HL points
+risk1 = risk[-c(72,15,73,16,57),]
+attach(risk1)
+summary(m1)
+
+par(mfrow=c(2,6))
+plot.new() # makes a blank plot
+hist(ASSUME)
+hist(SIZELOG)
+hist(INDCOST)
+hist(CENTRAL)
+hist(SOPH)
+hist(FIRMCOST)
+plot(ASSUME, FIRMCOST)
+plot(SIZELOG, FIRMCOST)
+plot(INDCOST, FIRMCOST)
+plot(CENTRAL, FIRMCOST)
+plot(SOPH, FIRMCOST)
+
+# Let's try transformations of Assume (it is strongly right skewed) and FIRMCOST ( it is also a little right skewed 
+#   and we get a lot of bang for our buck in transforming the Y, it often improves the fit of the model).
+par(mfrow=c(2,3))
+lnASSUME = log(ASSUME)
+lnFIRMCOST = log(FIRMCOST)
+hist(ASSUME)
+hist(lnASSUME)
+hist(FIRMCOST)
+hist(lnFIRMCOST)
+logFIRMCOST = log10(FIRMCOST)
+hist(logFIRMCOST)
+sqrtFIRMCOST = sqrt(FIRMCOST)
+hist(sqrtFIRMCOST)
+
+# The log of ASSUME and the sqrt of FIRMCOST look the best, let's use them going forward.
+
+# Let's relook at all of the plots with these transformations
+par(mfrow=c(2,6))
+plot.new() # makes a blank plot
+hist(lnASSUME)
+hist(SIZELOG)
+hist(INDCOST)
+hist(CENTRAL)
+hist(SOPH)
+hist(sqrtFIRMCOST)
+plot(lnASSUME, sqrtFIRMCOST)
+plot(SIZELOG, sqrtFIRMCOST)
+plot(INDCOST, sqrtFIRMCOST)
+plot(CENTRAL, sqrtFIRMCOST)
+plot(SOPH, sqrtFIRMCOST)
+
+#SIZELOG seems to have a curve in it and INDCOST seems to also possibly have a change in slope. Let's try a square term of
+#   both of these.
+
+SIZE2 = SIZELOG^2
+IND2 = INDCOST^2
+
+lnASSUME = log(ASSUME + 1)
+m2 = lm(sqrtFIRMCOST ~ lnASSUME + CAP + SIZELOG + INDCOST + CENTRAL + SOPH + SIZE2 + IND2)
+# We cannot take the log of 0, that's why we got the error message above. 
+# To fix this, we add +1 inside the log. The log of 1 is 0, so we can shift all values the same and really add nothing. 
+
+summary(m2)
+
+# At alpha=0.05, the square term of SIZELOG is not significant with a p-value of .263 and the square of INDCOST is at 0.018.
+# At this point, let's start backwards regression.
+
+# Throw out CAPT at .495
+
+m2a = lm(sqrtFIRMCOST ~ lnASSUME + SIZELOG + INDCOST + CENTRAL + SOPH + SIZE2 + IND2)
+summary(m2a)
+
+# Throw out SIZELOG at .4443
+
+m2b = lm(sqrtFIRMCOST ~ lnASSUME + INDCOST + CENTRAL + SOPH + SIZE2 + IND2)
+summary(m2b)
+
+# Throw out SOPH at .4445
+m2c = lm(sqrtFIRMCOST ~ lnASSUME + INDCOST + CENTRAL + SIZE2 + IND2)
+summary(m2c)
+
+#Throw out lnASSUME at .2229
+m2d = lm(sqrtFIRMCOST ~ INDCOST + CENTRAL + SIZE2 + IND2)
+summary(m2d)
+
+# Throw out CENTRAL at .1508
+m2e = lm(sqrtFIRMCOST ~ INDCOST + SIZE2 + IND2)
+summary(m2e)
+
+# m2e is the best model at alpha = .10 or .05. 
+
+# If alpha = .01, throw out IND2
+m2f = lm(sqrtFIRMCOST ~ INDCOST + SIZE2)
+summary(m2f)
+
+# m2f is the best model at alpha = .01
+# The only thing more attractive about this model is that it is 1 less term, but we have to collect the data for INDCOST
+#   anyway to make IND2
+
+# The alpha = 0.05 has a better s, R2, R2a, and pretty equivalent F p-value.
+# Let's look at another goodness of fit criteria. The AIC values
+
+extractAIC(m2e)
+extractAIC(m2f)
+
+# The AIC value for model m2e is the smallest and thus the best.
+# Now let's look at the residual plot of our 'final model' and see if we spot any inadequancies. 
+
+par(mfrow=c(1,1))
+plot(residuals(m2e) ~ fitted.values(m2e))
+
+# We do see random scatter here, which is good. This means the linearity assumption is not violated. 
+# However, we do have a sort of megaphone shape with large spread around 3 and verry small spread around 0-1. This is bad,
+#   this violates the equal variance assumption. Typically to fix this, we would need a transformation of the Y variable. 
+#   But, we have already done that and are using the sqrt version.
+
+par(mfrow=c(2,3))
+lnASSUME = log(ASSUME)
+lnFIRMCOST = log(FIRMCOST)
+hist(ASSUME)
+hist(lnASSUME)
+hist(FIRMCOST)
+hist(lnFIRMCOST)
+logFIRMCOST = log10(FIRMCOST)
+hist(logFIRMCOST)
+sqrtFIRMCOST = sqrt(FIRMCOST)
+hist(sqrtFIRMCOST)
+
+# We liked the sqrt transformation best, but the log10 was also pretty good. The logs are strong transformations with
+#   major effects of the distribution shape. The sqrt is more moderate than logs. Logs are often more for measured
+#   data, that can be ecimals, and larger values. Sqrt is often more for count (integer) data and smaller values.
+#   These are not hard and fast rules though. The previous comments about strength are more important. 
+
+# If we would go back and use log10 and then redo backwards regression from the beginning, we would end up with:
+
+m3 = lm(logFIRMCOST ~ INDCOST + SIZE2 + IND2)
+summary(m3)
+
+# These numbers are better than the sqrt model version. s went down from .90 to .32, R2 went up from .43 to .58, 
+#   R2a went up from .40 to .565, and the F p-value went down from 4.876e-08 to 3.039e-12. All of these are surpising
+#   improvements from using a different transfomration. 
+
+plot(residuals(m3) ~ fitted.values(m3))
+# This does have random scatter and equal variance (homoscedasticity), which are good.
+
+# These R2 values are not that high, but they are much improved. They did not think SIZELOG and INDCOST were going to
+#   be significant, but versions of those are all we have ended up with. These people were ust very confused about
+#   their data.
+
+# m3 is the best model we have built with these techniques. They are welcoming and they should pay us now :)
+
+#   
+
