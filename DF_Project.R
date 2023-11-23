@@ -26,3 +26,22 @@ which.max(best.summary$adjr2) # 8 predictors recommended
 best.summary$which[8,]
 
 df_best <- df.predictors[best.summary$which[8,]] # create df of best performing predictors
+
+# ----------- Splitting Training and Testing ---------------
+
+
+
+# ------------ Creating lm with df_best as dataset -----------
+df_best_model <- lm((total_run_impact + 1)^(-0.1) ~ ., data = df_best)
+summary(df_best_model)
+# R^2 of 0.6915 / R^2a = 0.6914
+
+# ------------ Creating Confidence Intervals -----------
+coeff_int = cbind(coef(df_best_model), confint(df_best_model))
+colnames(coeff_int) = c("Estimate", "Lower CI", "Upper CI")
+print(coeff_int)
+
+# ------------ Bonferroni Confidence Intervals ---------
+alpha_a = 0.05/9
+bonf_conf_int = confint(df_best_model, level = 1 - alpha_a)
+print(bonf_conf_int)
