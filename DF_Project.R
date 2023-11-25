@@ -127,8 +127,7 @@ intercation_anov
 
 df_interaction <- lm((total_run_impact + 1)^(-0.1) ~ df_best$home_team_runs + df_best$away_team_runs + df_best$pitches_called + 
                        df_best$incorrect_calls + df_best$expected_incorrect_calls + df_best$accuracy_above_expected + df_best$consistency + 
-                       df_best$favor_home + df_best$incorrect_calls*df_best$expected_incorrect_calls + df_best$incorrect_calls*df_best$accuracy_above_expected + 
-                       df_best$expected_incorrect_calls*df_best$consistency  , data = df_best)
+                       df_best$favor_home + df_best$incorrect_calls*df_best$expected_incorrect_calls + df_best$incorrect_calls*df_best$accuracy_above_expected, data = df_best)
 summary(df_interaction)
 # R^2 of 0.7094 / R^2a = 0.7092
 anova(df_interaction)
@@ -137,3 +136,24 @@ plot(resid(df_interaction) ~ fitted(df_interaction))
 abline(h=0)
 qqnorm(resid(df_interaction))
 qqline(resid(df_interaction))
+
+#Cooks distance
+cooks.distance(df_interaction)
+plot(cooks.distance(df_interaction),type = "o")
+text(cooks.distance(df_interaction), labels=rownames(df_best), cex=0.9, font=2)
+title("Cook's Distance")
+#14892 appears to be an outlier
+
+#DFFITS
+dffits(df_interaction)
+plot(dffits(df_interaction),type = "o")
+text(dffits(df_interaction), labels=rownames(df_best), cex=0.9, font=2)
+title("DFFITS")
+#14892 appears to be an outlier again
+
+#DFBETAS
+dfbetas(df_interaction)
+plot(dfbetas(df_interaction),type = "o")
+text(dfbetas(df_interaction), labels=rownames(df_best), cex=0.9, font=2)
+title("DFBETAS")
+#14892 appears to be an outlier again
