@@ -138,22 +138,22 @@ qqnorm(resid(df_interaction))
 qqline(resid(df_interaction))
 
 #Cooks distance
-cooks.distance(df_interaction)
-plot(cooks.distance(df_interaction),type = "o")
-text(cooks.distance(df_interaction), labels=rownames(df_best), cex=0.9, font=2)
+cooks.distance(df_best_model)
+plot(cooks.distance(df_best_model),type = "o")
+text(cooks.distance(df_best_model), labels=rownames(df_best), cex=0.9, font=2)
 title("Cook's Distance")
 #14892 appears to be an outlier
 
 #DFFITS
-dffits(df_interaction)
-plot(dffits(df_interaction),type = "o")
-text(dffits(df_interaction), labels=rownames(df_best), cex=0.9, font=2)
+dffits(df_best_model)
+plot(dffits(df_best_model),type = "o")
+text(dffits(df_best_model), labels=rownames(df_best), cex=0.9, font=2)
 title("DFFITS")
 #14892 appears to be an outlier again
 
 #DFBETAS
-dfbetas(df_interaction)
-plot(dfbetas(df_interaction),type = "o")
-text(dfbetas(df_interaction), labels=rownames(df_best), cex=0.9, font=2)
+dfbetas(df_best_model)
+plot(dfbetas(df_best_model),type = "o")
+text(dfbetas(df_best_model), labels=rownames(df_best), cex=0.9, font=2)
 title("DFBETAS")
 #14892 appears to be an outlier again
