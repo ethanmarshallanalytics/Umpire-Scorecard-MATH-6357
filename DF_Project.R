@@ -157,3 +157,23 @@ plot(dfbetas(df_best_model),type = "o")
 text(dfbetas(df_best_model), labels=rownames(df_best), cex=0.9, font=2)
 title("DFBETAS")
 #14892 appears to be an outlier again
+
+#Brown-Forscythe Test
+g<-rep(1,18093) #18093 obs
+mean(df_best$home_team_runs) #mean = 4
+g[df_best$home_team_runs<=4]=0
+bftest(df_best_model,g,alpha=.05)
+#H0:Variance of the groups are equal
+#Ha: At least one group has a different variance
+#alpha = 0.05
+#p-value = 0.0045
+#Reject the null hypothesis. No evidence to suggest that variance of the groups are equal
+
+#Breusch-Pagan Test
+library(lmtest)
+bptest(df_best_model, student = FALSE)
+#H0: Variance of the errors is constant across all observations (homoskedasticity)
+#Ha:Variance of the errors is not constant across all observations (heteroskedasticity)
+#alpha = 0.05
+#p-value = < 2.2e-16
+#Conclusion: Reject the null hypothesis.No evidence to suggest that Variance of the errors is constant across all observations (homoskedasticity)
