@@ -177,3 +177,14 @@ bptest(df_best_model, student = FALSE)
 #alpha = 0.05
 #p-value = < 2.2e-16
 #Conclusion: Reject the null hypothesis.No evidence to suggest that Variance of the errors is constant across all observations (homoskedasticity)
+
+#Weighted least squares
+abs.res = abs(residuals(df_best_model))
+abs.res.fit <- lm(abs.res~df_best$home_team_runs + df_best$away_team_runs +  df_best$incorrect_calls + df_best$expected_correct_calls + 
+                    df_best$accuracy_above_expected + df_best$consistency_x + df_best$favor_home + df_best$expected_consistency)
+abs.res.fit 
+wts <- 1/fitted(abs.res.fit)^2
+final.fit <- lm((total_run_impact + 1)^(-0.1) ~ ., data = df_best, weights = wts)
+summary(final.fit)
+# R^2 of 0.6903 / R^2a = 0.6901
+# R^2 got worse
