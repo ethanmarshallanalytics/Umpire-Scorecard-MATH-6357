@@ -44,7 +44,7 @@ alpha_a = 0.05/9
 bonf_conf_int = confint(df_best_model, level = 1 - alpha_a)
 print(bonf_conf_int)
 
-# ------------ Predicting 2022 Season ---------------
+# ------------ Predicting 2023 Season (VALIDATION) ---------------
 df$date = as.Date(df$date, format = "%m/%d/%Y")
 df$year = as.integer(format(as.Date(df$date, format = "%m/%d/%Y"), "%Y"))
 
