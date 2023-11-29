@@ -92,7 +92,7 @@ df.norm <- predict(process, as.data.frame(df[0:15]))
 # as before let's add experience back in
 df.norm['experience'] <- df$experience
   
-lm.norm <- lm(total_run_impact~.-ump_games,data = df.norm)
+lm.norm <- lm(total_run_impact~.,data = df.norm)
 qqnorm(lm.norm$residuals)
 qqline(lm.norm$residuals)
 # Looks the same to me. Let's see what Shapiro-Wilk thinks
@@ -104,7 +104,7 @@ shapiro.test(lm.norm$residuals[0:5000])
 # yield residuals most approximately normal. Some of our Y-values are 0, which can't
 # has a log value of infinity. To get around this we add a constant to each value of Y
 # (There are more elegant ways of doing this) and re-run the basic regression.
-lm.bc <- lm(total_run_impact+1~.-ump_games, data = df)
+lm.bc <- lm(total_run_impact+1~., data = df)
 lambda <- boxcox(object = lm.bc, lambda = seq(-2, 2, .05), plotit = TRUE)
 # The graph shows us the power transformation which has the highest likelihood of being normal
 # To find out which it refers to we need the coordinates
@@ -248,25 +248,44 @@ df.known <- df %>% dplyr::select(expected_consistency,
 # Start with a basic regression
 lm.known.basic <- lm((total_run_impact+1)^-.1~., data = df.known)
 summary(lm.known.basic)
+# R^2: 0.3727
+# Residual Standard Error: 0.02124
+
+plot(x = (df.known$total_run_impact+1)^-.1, y = df.known$expected_incorrect_calls)
 
 # Play around with interaction terms and polynomials
 # Polynomial model
 lm.known.poly <- lm((total_run_impact+1)^-.1~.+ poly(expected_consistency, 3) + poly(expected_accuracy, 3) +
                          poly(expected_incorrect_calls, 3), data = df.known)
 summary(lm.known.poly)
+# R^2: 0.3816
+# Residual Standard Error: 0.0211
 
+## Running Stepwise Backwards Regression on lm.known.poly
+m1 = lm((total_run_impact+1)^-.1~1, data = df.known)
+step(lm.known.poly, scope=list(lower= m0, upper=lm.known.poly, direction = "backwards"))
+
+best_model2 = lm((total_run_impact+1)^-.1~.+ poly(expected_consistency, 3) + poly(expected_accuracy, 3) +
+                   poly(expected_incorrect_calls, 3), data = df.known)
 # Interaction model
 lm.known.int <- lm(total_run_impact~.^2, data = df.known)
 summary(lm.known.int)
+# R^2: 0.3731
+# Residual Standard Error: 0.6127
 
 # Polynomial and Interaction Model
 lm.known.combo <- update(lm.known.poly, .~.^2)
 summary(lm.known.combo)
+# R^2: 0.3846
+# Residual Standard Error: 0.02107
+
 
 # Load 2023 set to test model
 df.2023 <- read.csv('2023_Season_Games.csv')
+# Dropping NAs
+df.2023 = na.omit(df.2023)
 # Make dtype changes as before
-df.2023[,5:21] <- sapply(df.2023[,5:21], as.numeric)
+df.2023[,7:23] <- sapply(df.2023[,7:23], as.numeric)
 df.2023$experience <- as.factor(df.2023$experience)
 df.2023 <- na.omit(df.2023) # drop missing values
 str(df.2023)
@@ -275,8 +294,21 @@ str(df.2023)
 pred.2023 <- ((predict(lm.known.basic, df.2023))^-10)-1
 error <- mean((df.2023$total_run_impact - pred.2023)^2)
 sqrt(error)
+pred.2023
 # Okay for some reason it's better now.
 
 # Comparison of error if you plug in mean.
 error <- mean((df.2023$total_run_impact - mean(df.2023$total_run_impact))^2)
 sqrt(error)
+
+## Calculate Prediction Intervals
+# Going to use lm.known.poly model
+ws_data = read.csv("ws_games.csv")
+ws_data = ws_data[,c("xIC", "xAcc", "totRI")]
+cols = c("expected_incorrect_calls", "expected_accuracy", "total_run_impact")
+colnames(ws_data) = cols
+ws_data$expected_consistency = c(92.876,93.213,93.448,93.384,93.378)
+ws_data$experience = "Seasoned"
+pred_interval = predict(lm.known.poly, newdata = ws_data, 
+                        interval = "prediction", level = 0.95)
+pred_interval
